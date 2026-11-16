@@ -6,6 +6,13 @@
     "unity": "2022.3",
     "unityRelease": "42f1",
     "hideInEditor": false,
+    "samples": [
+        {
+            "displayName": "Materials, Textures, Prefabs",
+            "description": "A few prefabs and already set up a time of day",
+            "path": "Samples~/"
+        }
+    ],
     "author": {
         "name": "Sebastien Berton",
         "email": "sebasti1.berton@gmail.com",
