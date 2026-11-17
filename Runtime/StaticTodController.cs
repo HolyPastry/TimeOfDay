@@ -1,7 +1,7 @@
+using System.Collections.Generic;
 using System.Linq;
 using Bakery.Core;
 using UnityEngine;
-using UnityEngine.Rendering;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -14,33 +14,9 @@ namespace Bakery
         private string _resourcePath = "";
 
         [SerializeField]
-        private StaticTodData _todData;
+        private AbstractTodData _todData;
 
-        private DataCollection<StaticTodData> _collection;
-
-        [Header("Volumes")]
-        [SerializeField]
-        private Volume _dayVolume;
-
-        [SerializeField]
-        private Volume _nightVolume;
-
-        [Header("The Sun and Moon")]
-        [SerializeField]
-        private Light _moonLight;
-
-        [SerializeField]
-        private Light _sunLight;
-
-        [SerializeField]
-        private GameObject _fakeSun;
-
-        [SerializeField]
-        private GameObject _fakeMoon;
-
-        [Header("SkyBox")]
-        [SerializeField]
-        private Material _skyboxMaterial;
+        private DataCollection<AbstractTodData> _collection;
 
         void Awake()
         {
@@ -60,38 +36,19 @@ namespace Bakery
         [ContextMenu("Update TOD")]
         private void UpdateSettings()
         {
-            UpdateSettings(_todData);
+            ApplySettings(_todData);
         }
 
-        private void UpdateSettings(StaticTodData todData)
+        private void ApplySettings(AbstractTodData todData)
         {
-            RotateTheSun(todData);
-            UpdateAmbiantLight(todData);
+            todData.Apply();
         }
 
 #if UNITY_EDITOR
         [ContextMenu("Record Settings")]
         private void RecordSettings()
         {
-            _todData.SunIntensity = _sunLight.intensity;
-            _todData.MoonIntensity = _moonLight.intensity;
-
-            _todData.AmbiantLight = RenderSettings.ambientLight;
-            _todData.EquatorColor = RenderSettings.ambientEquatorColor;
-            _todData.GroundColor = RenderSettings.ambientGroundColor;
-            _todData.SkyColor = RenderSettings.ambientSkyColor;
-
-            _todData.RealtimeShadowColor = RenderSettings.subtractiveShadowColor;
-
-            _todData.FogColor = RenderSettings.fogColor;
-            _todData.SunMoonIntensity = RenderSettings.haloStrength;
-            //RenderSettings.flareStrength =
-
-            _todData.SkyboxRotation = _skyboxMaterial.GetFloat("_TimeOfDay");
-
-            _todData.GlobalVolumeIntensity = _dayVolume.weight;
-
-            _todData.SunMoonRotation = transform.rotation;
+            _todData.Record();
 
             EditorUtility.SetDirty(_todData);
             AssetDatabase.Refresh();
@@ -99,54 +56,25 @@ namespace Bakery
         }
 #endif
 
-        private void UpdateAmbiantLight(StaticTodData todData)
+        public void Set(List<TODFilter> filters)
         {
-            _sunLight.intensity = todData.SunIntensity;
-            _moonLight.intensity = todData.MoonIntensity;
+            var sortedCollection = _collection
+                .Data.Where(tod =>
+                {
+                    foreach (var filter in filters)
+                        if (filter.IsMandatory && !tod._filters.Contains(filter))
+                            return false;
 
-            RenderSettings.ambientLight = todData.AmbiantLight;
-            RenderSettings.ambientEquatorColor = todData.EquatorColor;
-            RenderSettings.ambientGroundColor = todData.GroundColor;
-            RenderSettings.ambientSkyColor = todData.SkyColor;
+                    return true;
+                })
+                .OrderBy(tod => filters.Count(f => tod._filters.Contains(f)));
 
-            RenderSettings.subtractiveShadowColor = todData.RealtimeShadowColor;
+            if (sortedCollection.Count() == 0)
+                Debug.LogWarning("No Matching TOD parameters found");
 
-            RenderSettings.fogColor = todData.FogColor;
-            RenderSettings.haloStrength = todData.SunMoonIntensity;
-            //RenderSettings.flareStrength =
-
-            _skyboxMaterial.SetFloat("_TimeOfDay", todData.SkyboxRotation);
-
-            _dayVolume.weight = todData.GlobalVolumeIntensity;
-            _nightVolume.weight = 1 - _dayVolume.weight;
-        }
-
-        private void RotateTheSun(StaticTodData todData)
-        {
-            transform.rotation = todData.SunMoonRotation;
-        }
-
-        public void Set(Season season, PeriodOfDay periodOfDay, Weather weather)
-        {
-            var data = _collection.Data.Find(tod =>
-                tod.Season == season && tod.PeriodOfDay == periodOfDay && tod.Weather == weather
-            );
-            if (data == null)
-                data = _collection.Data.Find(tod =>
-                    tod.Season == season && tod.PeriodOfDay == periodOfDay
-                );
-
-            if (data == null)
-                data = _collection.Data.Find(tod => tod.Season == season);
-            if (data == null)
-                data = _collection.Data.FirstOrDefault(tod => true);
-            if (data == null)
-            {
-                Debug.LogWarning("No Matching TOD Settings");
-                return;
-            }
-            UpdateSettings(data);
-            TOD.Events.OnChanged(season, periodOfDay, weather);
+            var tod = sortedCollection.ElementAt(0);
+            ApplySettings(tod);
+            TOD.Events.OnChanged(tod);
         }
     }
 }

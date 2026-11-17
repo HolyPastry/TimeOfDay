@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Bakery.Flow;
 using UnityEngine;
 
@@ -7,17 +8,11 @@ namespace Bakery
     public class SceneSetup_TimeOfDay : SceneSetupScript
     {
         [SerializeField]
-        private Season _season;
-
-        [SerializeField]
-        private PeriodOfDay _periodOfDay;
-
-        [SerializeField]
-        private Weather _weather;
+        private List<TODFilter> _filters;
 
         public override IEnumerator Routine()
         {
-            TOD.Controller().Set(_season, _periodOfDay, _weather);
+            TOD.Controller().Set(_filters);
             yield return null;
         }
     }

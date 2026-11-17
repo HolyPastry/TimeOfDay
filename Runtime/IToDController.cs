@@ -1,7 +1,9 @@
+using System.Collections.Generic;
+
 namespace Bakery
 {
     public interface IToDController
     {
-        void Set(Season season, PeriodOfDay periodOfDay, Weather weather);
+        void Set(List<TODFilter> filters);
     }
 }

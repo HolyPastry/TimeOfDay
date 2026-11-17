@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Bakery
@@ -17,7 +18,7 @@ namespace Bakery
 
             public static Action SpeedChanged = delegate { };
 
-            public static Action<Season, PeriodOfDay, Weather> OnChanged = delegate { };
+            public static Action<AbstractTodData> OnChanged = delegate { };
         }
 
         public static Func<IToDManager> Manager = UnregisterManager;
@@ -64,7 +65,7 @@ namespace Bakery
 
         internal class DummyController : IToDController
         {
-            public void Set(Season season, PeriodOfDay periodOfDay, Weather weather) { }
+            public void Set(List<TODFilter> filters) { }
         }
     }
 }
